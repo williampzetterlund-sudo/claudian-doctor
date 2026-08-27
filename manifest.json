@@ -1,0 +1,9 @@
+{
+  "id": "claudian-doctor",
+  "name": "Claudian Doctor",
+  "version": "1.0.0",
+  "minAppVersion": "1.0.0",
+  "description": "Diagnostics for the Claudian remote plugin: checks installed files, attempts load, captures the real error.",
+  "author": "William Zetterlund",
+  "isDesktopOnly": false
+}
