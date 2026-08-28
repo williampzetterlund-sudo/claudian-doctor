@@ -80,9 +80,45 @@ module.exports = class ClaudianDoctor extends Plugin {
       name: 'Run diagnostics',
       callback: () => { this.run().catch((e) => new Notice('doctor: ' + e.message)); },
     });
+    this.addCommand({
+      id: 'dump-bottom-ui',
+      name: 'Dump bottom UI elements',
+      callback: () => { this.dumpBottomUi().catch((e) => new Notice('doctor: ' + e.message)); },
+    });
     this.app.workspace.onLayoutReady(() => {
       window.setTimeout(() => { this.run().catch((e) => new Notice('doctor: ' + e.message)); }, 1500);
     });
+  }
+
+  async dumpBottomUi() {
+    const out = [];
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    out.push('=== Bottom UI dump ' + new Date().toISOString() + ' viewport=' + vw + 'x' + vh);
+    const seen = new Set();
+    const all = document.body.querySelectorAll('*');
+    for (const el of all) {
+      let r;
+      try { r = el.getBoundingClientRect(); } catch (e) { continue; }
+      // synliga element vars topp ligger i nedre tredjedelen
+      if (r.height < 8 || r.width < 8 || r.top < vh * 0.62 || r.top > vh) continue;
+      const style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') continue;
+      // hoppa över rena textcontainrar djupt inne i redan listade träd
+      let ancestorListed = false;
+      let p = el.parentElement;
+      let depth = 0;
+      while (p && depth < 3) { if (seen.has(p)) { ancestorListed = true; break; } p = p.parentElement; depth++; }
+      if (ancestorListed) continue;
+      seen.add(el);
+      const cls = (typeof el.className === 'string' ? el.className : '').split(/\s+/).filter(Boolean).slice(0, 6).join('.');
+      const text = (el.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+      out.push('<' + el.tagName.toLowerCase() + (cls ? ' .' + cls : '') + '> pos=' + Math.round(r.top) + ',' + Math.round(r.left) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height) + (text ? ' text="' + text + '"' : ''));
+      if (out.length > 60) { out.push('...trunkerad'); break; }
+    }
+    const text = out.join('\n');
+    try { await this.app.vault.adapter.write('CLAUDIAN-DOCTOR.md', '```\n' + text + '\n```\n'); } catch (e) { /* modal racker */ }
+    new DoctorModal(this.app, text).open();
   }
 
   async run() {
