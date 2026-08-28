@@ -121,6 +121,20 @@ module.exports = class ClaudianDoctor extends Plugin {
       out.push('<' + el.tagName.toLowerCase() + (cls ? ' .' + cls : '') + '> pos=' + Math.round(r.top) + ',' + Math.round(r.left) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height) + (text ? ' text="' + text + '"' : ''));
       if (out.length > 60) { out.push('...trunkerad'); break; }
     }
+    // Förfäderskedja för vyväxlar-pillen: vem äger dödytan?
+    const pill = document.querySelector('.workspace-drawer-tab-options');
+    if (pill) {
+      out.push('--- pillens forfader (rect + padding/margin) ---');
+      let node = pill;
+      for (let i = 0; i < 7 && node && node !== document.body; i++) {
+        const r = node.getBoundingClientRect();
+        const cs = window.getComputedStyle(node);
+        const cls = (typeof node.className === 'string' ? node.className : '').split(/\s+/).filter(Boolean).slice(0, 5).join('.');
+        out.push('<' + node.tagName.toLowerCase() + (cls ? ' .' + cls : '') + '> top=' + Math.round(r.top) + ' h=' + Math.round(r.height)
+          + ' pad=' + cs.paddingTop + '/' + cs.paddingBottom + ' marg=' + cs.marginTop + '/' + cs.marginBottom + ' pos=' + cs.position);
+        node = node.parentElement;
+      }
+    }
     const text = out.join('\n');
     try { await this.app.vault.adapter.write('CLAUDIAN-DOCTOR.md', '```\n' + text + '\n```\n'); } catch (e) { /* modal racker */ }
     new DoctorModal(this.app, text).open();
