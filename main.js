@@ -82,8 +82,13 @@ module.exports = class ClaudianDoctor extends Plugin {
     });
     this.addCommand({
       id: 'dump-bottom-ui',
-      name: 'Dump bottom UI elements',
-      callback: () => { this.dumpBottomUi().catch((e) => new Notice('doctor: ' + e.message)); },
+      name: 'Dump bottom UI elements (6 s sjalvutlosare)',
+      callback: () => {
+        new Notice('Oppna panelen nu — dump om 6 sekunder...', 5500);
+        window.setTimeout(() => {
+          this.dumpBottomUi().catch((e) => new Notice('doctor: ' + e.message));
+        }, 6000);
+      },
     });
     this.app.workspace.onLayoutReady(() => {
       window.setTimeout(() => { this.run().catch((e) => new Notice('doctor: ' + e.message)); }, 1500);
